@@ -12,12 +12,14 @@ setup(
     zip_safe=False,
     install_requires=[
         'Click',
-        'boto3'
+        'pyathena'
     ],
     setup_requires=[
         'flake8'
     ],
-    classifiers=[
+    entry_points={
+        'console_scripts': ['tilelog=tilelog:cli']
+    },    classifiers=[
         "Development Status :: 1 - Planning",
         "Environment :: Console",
         "Programming Language :: Python :: 3",
