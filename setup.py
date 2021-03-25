@@ -19,7 +19,8 @@ setup(
     ],
     entry_points={
         'console_scripts': ['tilelog=tilelog:cli']
-    },    classifiers=[
+    },
+    classifiers=[
         "Development Status :: 1 - Planning",
         "Environment :: Console",
         "Programming Language :: Python :: 3",
