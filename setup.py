@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='tilelogs',
-    version='0.1.0',
+    version='0.2.0',
     author="Paul Norman",
     author_email="osm@paulnorman.ca",
     url="https://github.com/openstreetmap/tilelog",

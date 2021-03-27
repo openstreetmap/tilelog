@@ -25,7 +25,7 @@ def tile_logs(curs, date):
 SELECT regexp_extract(request, '^GET /(\\d+/\\d+/\\d+).png', 1),
         CAST(COUNT(*) AS varchar)
 FROM logs.fastly_logs_v16
-WHERE regexp_like(request, '^GET /(\\d+)/(\\d+)/(\\d+).png')
+WHERE regexp_like(request, '^GET /1?\\d/\\d+/\\d+.png')
     AND status IN (200, 206, 304)
     AND year = %(year)d
     AND month = %(month)d
