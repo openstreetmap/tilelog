@@ -35,3 +35,5 @@ MANIFEST
 
 .venv
 venv/
+
+tiles-*.txt.xz
