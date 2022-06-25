@@ -38,7 +38,6 @@ tilelog --date ${DATE} --tile tiles-${DATE}.txt.xz --host hosts-${DATE}.csv.xz
 ```
 
 ## Format documentation
-All files are xz compressed.
 
 ### Tile logs
 Tile logs contain the number of requests per tile in a given 24 hour UTC day. Only tiles where at least 10 requests were made and requests came from at least 3 unique IPs are included for privacy reasons. Requests that were blocked, invalid, or unable to be served due to server load are not included (4xx and 5xx errors).

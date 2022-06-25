@@ -21,7 +21,7 @@ MIN_REQUESTS = 86400*5
 @click.option('--region', default="eu-west-1", help="Region for Athena")
 @click.option('--tile', type=click.File('wb'),
               help="File to output tile usage logs to")
-@click.option('--host', type=click.File('wb'),
+@click.option('--host', type=click.File('w', encoding='utf-8'),
               help="File to output host usage logs to")
 def cli(date, staging, region, tile, host):
     click.echo("Generating files for {}".format(date.strftime("%Y-%m-%d")))
@@ -85,8 +85,7 @@ ORDER BY COUNT(*) DESC;
     curs.execute(query, {"year": date.year, "month": date.month,
                          "day": date.day, "min_requests": MIN_REQUESTS})
     click.echo("Writing host usage to file")
-    with lzma.open(dest, "wt", encoding="utf-8") as file:
-        csvwriter = csv.writer(file, dialect=csv.unix_dialect,
-                               quoting=csv.QUOTE_NONNUMERIC)
-        for host in curs:
-            csvwriter.writerow(host)
+    csvwriter = csv.writer(dest, dialect=csv.unix_dialect,
+                           quoting=csv.QUOTE_NONNUMERIC)
+    for host in curs:
+        csvwriter.writerow(host)
