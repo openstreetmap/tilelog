@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='tilelog',
-    version='0.4.0',
+    version='1.0.0',
     author="Paul Norman",
     author_email="osm@paulnorman.ca",
     url="https://github.com/openstreetmap/tilelog",
@@ -21,12 +21,13 @@ setup(
         'console_scripts': ['tilelog=tilelog:cli']
     },
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 5 - Production/Stable",
         "Environment :: Console",
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
+        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
         "Operating System :: POSIX :: Linux",
-        "Topic :: Scientific/Engineering :: GIS"
+        "Topic :: Scientific/Engineering :: GIS",
+        "Intended Audience :: Science/Research"
     ],
     python_requires="~=3.6"
 )

@@ -17,9 +17,58 @@ python3 -m venv venv
 pip install --editable .
 ```
 
+## Usage
+
+```
+Usage: tilelog [OPTIONS]
+
+Options:
+  --date [%Y-%m-%d]  Date to generate logs for. Defaults to yesterday.
+  --staging TEXT     AWS s3 location for Athena results
+  --region TEXT      Region for Athena
+  --tile FILENAME    File to output tile usage logs to
+  --host FILENAME    File to output host usage logs to
+  --help             Show this message and exit.
+```
+
+e.g.
+```sh
+DATE=$(date -d "1 day ago" "+%Y-%m-%d")
+tilelog --date ${DATE} --tile tiles-${DATE}.txt.xz --host hosts-${DATE}.csv.xz
+```
+
+## Format documentation
+All files are xz compressed.
+
+### Tile logs
+Tile logs contain the number of requests per tile in a given 24 hour UTC day. Only tiles where at least 10 requests were made and requests came from at least 3 unique IPs are included for privacy reasons. Requests that were blocked, invalid, or unable to be served due to server load are not included (4xx and 5xx errors).
+
+The format is one tile per line, in the format `z/x/y N` where `z/x/y` is the conventional tile coordinate and `N` is the number of requests.
+
+No particular sorting order of lines is guaranteed.
+
+### Host logs
+Host logs contain the website host of sites using tile.openstreetmap.org, their average requests/second, and their average requests/second that were cache misses in a given 24 hour UTC day. For privacy reasons, only sites with at least 432000 requests per day (5 requests/second average) coming from the site are included. Requests that were blocked, invalid, or unable to be served due to server load are not included (4xx and 5xx errors).
+
+The host will normally be a valid domain name, but as this data comes from user requests it may contain other text.
+
+The format is one host per line, in the CSV format `"HOST",N,M` where HOST is the host name, with special characters escaped, N is the requests/second, and M is the requests/second that were cache misses. Hosts are ordered by requests/second
+
+The following may change in the future
+- Additional fields added at the end
+- The definition of "cache miss"
+- The theshold for requests/day to be included
+- Handling of invalid domains and empty referers
+
+## Contributing
+
+Unfortunately, testing tilelogs requires access to private logs, making it difficult to test.
+
+Style is `flake8`
+
 ## Licence
 
-Copyright (C) 2021 Paul Norman
+Copyright (C) 2021-2022 Paul Norman
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
