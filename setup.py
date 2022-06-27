@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='tilelog',
-    version='1.1.0',
+    version='1.2.0',
     author="Paul Norman",
     author_email="osm@paulnorman.ca",
     url="https://github.com/openstreetmap/tilelog",
@@ -12,6 +12,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'Click',
+        'publicsuffixlist',
         'pyathena'
     ],
     setup_requires=[
