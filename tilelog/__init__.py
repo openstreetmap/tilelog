@@ -1,13 +1,15 @@
 import click
+from publicsuffixlist import PublicSuffixList
 import pyathena
 import csv
 import datetime
 import lzma
+import re
 
 MIN_TILE_REQUESTS = 10
 MIN_DISTINCT_TILE_REQUESTS = 3
 
-MIN_REQUESTS = 86400*5
+MIN_TPS = 5.0
 
 
 @click.command()
@@ -58,15 +60,29 @@ ORDER BY regexp_extract(request, '^GET /(\\d+/\\d+/\\d+).png', 1)
         for tile in curs:
             file.write("{} {}\n".format(tile[0], tile[1]).encode('ascii'))
 
+psl = PublicSuffixList()
+def normalize_host(host):
+    if host is None:
+        return ""
+    # IPs don't have a public/private suffix
+    if re.match("^(\d+\.){3}\d+$", host):
+        return host
+
+    suffix = psl.privatesuffix(host)
+
+    # Something like "localhost", or an invalid host like ".example.com" may return None,
+    # so don't try to give just the suffix in those cases
+    if suffix is None:
+        return host
+    return suffix
 
 def host_logs(curs, date, dest):
     click.echo("Querying for host usage")
     query = """
 SELECT
 host,
-round(cast(count(*) as double)/86400, 2) AS tps,
-round(cast(count(*)
-      FILTER (WHERE cachehit = 'MISS') as double)/86400, 2) AS tps_miss
+cast(count(*) as double)/86400 AS tps,
+cast(count(*) FILTER (WHERE cachehit = 'MISS') as double)/86400 AS tps_miss
 FROM (
     SELECT regexp_extract(referer,
                           'https?://([^/]+?)(:[0-9]+)?/.*', 1) AS host,
@@ -79,13 +95,25 @@ WHERE status IN (200, 206, 304)
     AND referer != ''
     ) AS stripped_referers
 GROUP BY host
-HAVING COUNT(*) >= %(min_requests)d
 ORDER BY COUNT(*) DESC;
     """
     curs.execute(query, {"year": date.year, "month": date.month,
-                         "day": date.day, "min_requests": MIN_REQUESTS})
+                         "day": date.day})
+
+    # Create a dict of lists of TPS
+    grouped_hosts = {}
+    for host in curs:
+        stripped_hostname = normalize_host(host[0])
+        if stripped_hostname not in grouped_hosts:
+            grouped_hosts[stripped_hostname] = [host[1], host[2]]
+        else:
+            # TPS is host[1] and grouped_hosts[][0], so the indexes don't match up
+            grouped_hosts[stripped_hostname] = [grouped_hosts[stripped_hostname][0] + host[1],
+                                                grouped_hosts[stripped_hostname][1] + host[2]]
+
+    sorted_hosts = sorted([[host, metrics[0], metrics[1]] for (host,metrics) in grouped_hosts.items() if metrics[0] >= MIN_TPS],
+           key=lambda host: host[1], reverse=True) # Sort by TPS
     click.echo("Writing host usage to file")
     csvwriter = csv.writer(dest, dialect=csv.unix_dialect,
                            quoting=csv.QUOTE_NONNUMERIC)
-    for host in curs:
-        csvwriter.writerow(host)
+    csvwriter.writerows(sorted_hosts)
