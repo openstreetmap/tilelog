@@ -93,6 +93,7 @@ WHERE status IN (200, 206, 304)
     AND month = %(month)d
     AND day = %(day)d
     AND referer != ''
+    AND requestedwith = ''
     ) AS stripped_referers
 GROUP BY host
 ORDER BY COUNT(*) DESC;
