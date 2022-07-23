@@ -6,6 +6,9 @@ import datetime
 import lzma
 import re
 
+FASTLY_LOG_TABLE="logs.fastly_logs_v18"
+
+# Constants related to how much data to present in the summarized reports
 MIN_TILE_REQUESTS = 10
 MIN_DISTINCT_TILE_REQUESTS = 3
 
@@ -44,7 +47,7 @@ def tile_logs(curs, date, dest):
     query = """
 SELECT regexp_extract(request, '^GET /(\\d+/\\d+/\\d+).png', 1),
         CAST(COUNT(*) AS varchar)
-FROM logs.fastly_logs_v18
+FROM {tablename}
 WHERE regexp_like(request, '^GET /1?\\d/\\d+/\\d+.png')
     AND status IN (200, 206, 304)
     AND year = %(year)d
@@ -54,7 +57,7 @@ GROUP BY regexp_extract(request, '^GET /(\\d+/\\d+/\\d+).png', 1)
 HAVING COUNT(DISTINCT ip) >= %(min_distinct)d
     AND COUNT(*) >= %(min_requests)d
 ORDER BY regexp_extract(request, '^GET /(\\d+/\\d+/\\d+).png', 1)
-    """
+    """.format(tablename=FASTLY_LOG_TABLE)
     curs.execute(query, {"year": date.year, "month": date.month,
                          "day": date.day,
                          "min_distinct": MIN_DISTINCT_TILE_REQUESTS,
@@ -91,7 +94,7 @@ FROM (
     SELECT regexp_extract(referer,
                           'https?://([^/]+?)(:[0-9]+)?/.*', 1) AS host,
     cachehit
-FROM logs.fastly_logs_v18
+FROM {tablename}
 WHERE status IN (200, 206, 304)
     AND year = %(year)d
     AND month = %(month)d
@@ -101,7 +104,7 @@ WHERE status IN (200, 206, 304)
     ) AS stripped_referers
 GROUP BY host
 ORDER BY COUNT(*) DESC;
-    """
+    """.format(tablename=FASTLY_LOG_TABLE)
     curs.execute(query, {"year": date.year, "month": date.month,
                          "day": date.day})
 
@@ -155,7 +158,7 @@ FROM (
     WHEN useragent LIKE 'Mozilla/%%' AND referer != '' THEN referer -- This will only show referers that are not https ones, e.g. flash apps
     ELSE useragent END AS app,
     cachehit
-    FROM logs.fastly_logs_v18
+    FROM {tablename}
 WHERE status IN (200, 206, 304)
     AND year = %(year)d
     AND month = %(month)d
@@ -169,7 +172,7 @@ WHERE status IN (200, 206, 304)
 GROUP BY app
 HAVING COUNT(*) > %(tps)d*86400
 ORDER BY COUNT(*) DESC
-    """
+    """.format(tablename=FASTLY_LOG_TABLE)
 
     curs.execute(query, {"year": date.year, "month": date.month,
                          "day": date.day, "tps": MIN_TPS})
