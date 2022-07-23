@@ -59,6 +59,19 @@ The following may change in the future
 - The theshold for requests/day to be included
 - Handling of invalid domains and empty referers
 
+### App logs
+App logs contain the referer of non-website usage, primarily from stand-alone mobile and desktop programs. App name is derived from a combination of User-Agent, X-Requested-With, and non-website Referer.
+
+Multiple app versions are combined and indicated with *.
+
+The format is app host per line, in the CSV format `"APP",N,M` where APP is the app name, with special characters escaped, N is the requests/second, and M is the requests/second that were cache misses. Apps are ordered by requests/second
+
+The following may change in the future
+- Additional fields added at the end
+- The definition of "cache miss"
+- The theshold for requests/day to be included
+- Combining of app versions
+
 ## Contributing
 
 Unfortunately, testing tilelogs requires access to private logs, making it difficult to test.
