@@ -13,7 +13,8 @@ setup(
     install_requires=[
         'Click',
         'publicsuffixlist',
-        'pyathena'
+        'pyathena',
+        'PyAthena[Pandas]'
     ],
     setup_requires=[
         'flake8'

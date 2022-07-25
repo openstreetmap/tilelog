@@ -1,6 +1,7 @@
 import click
 from publicsuffixlist import PublicSuffixList
 import pyathena
+from pyathena.pandas.cursor import PandasCursor
 import csv
 import datetime
 import lzma
@@ -32,8 +33,8 @@ MIN_TPS = 5.0
               help="File to output app usage logs to")
 def cli(date, staging, region, tile, host, app):
     click.echo("Generating files for {}".format(date.strftime("%Y-%m-%d")))
-    with pyathena.connect(s3_staging_dir=staging,
-                          region_name=region).cursor() as curs:
+    with pyathena.connect(s3_staging_dir=staging, region_name=region,
+                          cursor_class=PandasCursor).cursor() as curs:
         if tile is not None:
             tile_logs(curs, date, tile)
         if host is not None:
