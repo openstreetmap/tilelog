@@ -1,19 +1,14 @@
 import click
 from publicsuffixlist import PublicSuffixList
 import pyathena
-from pyathena.pandas.cursor import PandasCursor
+from pyathena.arrow.cursor import ArrowCursor
 import csv
 import datetime
 import lzma
 import re
 
-FASTLY_LOG_TABLE="logs.fastly_logs_v18"
-
-# Constants related to how much data to present in the summarized reports
-MIN_TILE_REQUESTS = 10
-MIN_DISTINCT_TILE_REQUESTS = 3
-
-MIN_TPS = 5.0
+import tilelog.constants
+import tilelog.aggregate
 
 
 @click.command()
@@ -24,6 +19,7 @@ MIN_TPS = 5.0
 @click.option('--staging',
               default="s3://openstreetmap-fastly-processed-logs/tilelogs/",
               help="AWS s3 location for Athena results")
+@click.option('--generate-success', is_flag=True, default=False, help="Create logs of successful requests in Parquet")
 @click.option('--region', default="eu-west-1", help="Region for Athena")
 @click.option('--tile', type=click.File('wb'),
               help="File to output tile usage logs to")
@@ -31,10 +27,12 @@ MIN_TPS = 5.0
               help="File to output host usage logs to")
 @click.option('--app', type=click.File('w', encoding='utf-8'),
               help="File to output app usage logs to")
-def cli(date, staging, region, tile, host, app):
+def cli(date, staging, generate_success, region, tile, host, app):
     click.echo("Generating files for {}".format(date.strftime("%Y-%m-%d")))
     with pyathena.connect(s3_staging_dir=staging, region_name=region,
-                          cursor_class=PandasCursor).cursor() as curs:
+                          cursor_class=ArrowCursor).cursor() as curs:
+        if generate_success:
+            tilelog.aggregate.create_parquet(curs, date)
         if tile is not None:
             tile_logs(curs, date, tile)
         if host is not None:
@@ -46,27 +44,25 @@ def cli(date, staging, region, tile, host, app):
 def tile_logs(curs, date, dest):
     click.echo("Querying for tile usage")
     query = """
-SELECT regexp_extract(request, '^GET /(\\d+/\\d+/\\d+).png', 1),
-        CAST(COUNT(*) AS varchar)
+SELECT z, x, y,
+        COUNT(*)
 FROM {tablename}
-WHERE regexp_like(request, '^GET /1?\\d/\\d+/\\d+.png')
-    AND status IN (200, 206, 304)
-    AND year = %(year)d
+WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
-GROUP BY regexp_extract(request, '^GET /(\\d+/\\d+/\\d+).png', 1)
+GROUP BY z, x, y
 HAVING COUNT(DISTINCT ip) >= %(min_distinct)d
     AND COUNT(*) >= %(min_requests)d
-ORDER BY regexp_extract(request, '^GET /(\\d+/\\d+/\\d+).png', 1)
-    """.format(tablename=FASTLY_LOG_TABLE)
+ORDER BY z, x, y
+    """.format(tablename=tilelog.constants.FASTLY_PARQET_LOGS)
     curs.execute(query, {"year": date.year, "month": date.month,
                          "day": date.day,
-                         "min_distinct": MIN_DISTINCT_TILE_REQUESTS,
-                         "min_requests": MIN_TILE_REQUESTS})
+                         "min_distinct": tilelog.constants.MIN_DISTINCT_TILE_REQUESTS,
+                         "min_requests": tilelog.constants.MIN_TILE_REQUESTS})
     click.echo("Writing tile usage to file")
     with lzma.open(dest, "w") as file:
         for tile in curs:
-            file.write("{} {}\n".format(tile[0], tile[1]).encode('ascii'))
+            file.write("{}/{}/{} {}\n".format(tile[0], tile[1], tile[2], tile[3]).encode('ascii'))
 
 psl = PublicSuffixList()
 def normalize_host(host):
@@ -96,8 +92,7 @@ FROM (
                           'https?://([^/]+?)(:[0-9]+)?/.*', 1) AS host,
     cachehit
 FROM {tablename}
-WHERE status IN (200, 206, 304)
-    AND year = %(year)d
+WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
     AND referer != ''
@@ -105,7 +100,7 @@ WHERE status IN (200, 206, 304)
     ) AS stripped_referers
 GROUP BY host
 ORDER BY COUNT(*) DESC;
-    """.format(tablename=FASTLY_LOG_TABLE)
+    """.format(tablename=tilelog.constants.FASTLY_PARQET_LOGS)
     curs.execute(query, {"year": date.year, "month": date.month,
                          "day": date.day})
 
@@ -120,7 +115,7 @@ ORDER BY COUNT(*) DESC;
             grouped_hosts[stripped_hostname] = [grouped_hosts[stripped_hostname][0] + host[1],
                                                 grouped_hosts[stripped_hostname][1] + host[2]]
 
-    sorted_hosts = sorted([[host, metrics[0], metrics[1]] for (host,metrics) in grouped_hosts.items() if metrics[0] >= MIN_TPS],
+    sorted_hosts = sorted([[host, metrics[0], metrics[1]] for (host,metrics) in grouped_hosts.items() if metrics[0] >= tilelog.constants.MIN_TPS],
            key=lambda host: host[1], reverse=True) # Sort by TPS
     click.echo("Writing host usage to file")
     csvwriter = csv.writer(dest, dialect=csv.unix_dialect,
@@ -160,8 +155,7 @@ FROM (
     ELSE useragent END AS app,
     cachehit
     FROM {tablename}
-WHERE status IN (200, 206, 304)
-    AND year = %(year)d
+WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
     AND (
@@ -173,10 +167,10 @@ WHERE status IN (200, 206, 304)
 GROUP BY app
 HAVING COUNT(*) > %(tps)d*86400
 ORDER BY COUNT(*) DESC
-    """.format(tablename=FASTLY_LOG_TABLE)
+    """.format(tablename=tilelog.constants.FASTLY_PARQET_LOGS)
 
     curs.execute(query, {"year": date.year, "month": date.month,
-                         "day": date.day, "tps": MIN_TPS})
+                         "day": date.day, "tps": tilelog.constants.MIN_TPS})
     click.echo("Writing host usage to file")
     csvwriter = csv.writer(dest, dialect=csv.unix_dialect,
                            quoting=csv.QUOTE_NONNUMERIC)

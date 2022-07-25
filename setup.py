@@ -14,7 +14,7 @@ setup(
         'Click',
         'publicsuffixlist',
         'pyathena',
-        'PyAthena[Pandas]'
+        'PyAthena[Arrow]'
     ],
     setup_requires=[
         'flake8'
