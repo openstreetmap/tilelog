@@ -23,18 +23,20 @@ pip install --editable .
 Usage: tilelog [OPTIONS]
 
 Options:
-  --date [%Y-%m-%d]  Date to generate logs for. Defaults to yesterday.
-  --staging TEXT     AWS s3 location for Athena results
-  --region TEXT      Region for Athena
-  --tile FILENAME    File to output tile usage logs to
-  --host FILENAME    File to output host usage logs to
-  --help             Show this message and exit.
+  --date [%Y-%m-%d]   Date to generate logs for. Defaults to yesterday.
+  --staging TEXT      AWS s3 location for Athena results
+  --generate-success  Create logs of successful requests in Parquet
+  --region TEXT       Region for Athena
+  --tile FILENAME     File to output tile usage logs to
+  --host FILENAME     File to output host usage logs to
+  --app FILENAME      File to output app usage logs to
+  --help              Show this message and exit.
 ```
 
 e.g.
 ```sh
 DATE=$(date -d "1 day ago" "+%Y-%m-%d")
-tilelog --date ${DATE} --tile tiles-${DATE}.txt.xz --host hosts-${DATE}.csv.xz
+tilelog --date ${DATE} --tile tiles-${DATE}.txt.xz --host hosts-${DATE}.csv --app apps-${DATE}.csv
 ```
 
 ## Format documentation
