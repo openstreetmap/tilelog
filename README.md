@@ -35,7 +35,7 @@ Options:
 
 e.g.
 ```sh
-DATE=$(date -d "1 day ago" "+%Y-%m-%d")
+DATE=$(date -u -d "1 day ago" "+%Y-%m-%d")
 tilelog --date ${DATE} --tile tiles-${DATE}.txt.xz --host hosts-${DATE}.csv --app apps-${DATE}.csv
 ```
 
