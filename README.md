@@ -39,6 +39,8 @@ DATE=$(date -d "1 day ago" "+%Y-%m-%d")
 tilelog --date ${DATE} --tile tiles-${DATE}.txt.xz --host hosts-${DATE}.csv --app apps-${DATE}.csv
 ```
 
+`--generate-success` can only be run once for each day, so if doing development, should not generally be run as it will interfere with production.
+
 ## Format documentation
 
 ### Tile logs
