@@ -31,8 +31,11 @@ def cli(date, staging, generate_success, region, tile, host, app):
     click.echo("Generating files for {}".format(date.strftime("%Y-%m-%d")))
     with pyathena.connect(s3_staging_dir=staging, region_name=region,
                           cursor_class=ArrowCursor).cursor() as curs:
+
+        # Aggregation must be run first, because the other tasks depend on it
         if generate_success:
             tilelog.aggregate.create_parquet(curs, date)
+
         if tile is not None:
             tile_logs(curs, date, tile)
         if host is not None:
