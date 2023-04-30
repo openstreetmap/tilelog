@@ -37,5 +37,5 @@ MANIFEST
 venv/
 
 tiles-*.txt.xz
-hosts-*.txt
-apps-*.txt
+hosts-*.csv
+apps-*.csv
