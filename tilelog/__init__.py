@@ -20,7 +20,8 @@ import tilelog.country
 @click.option('--staging',
               default="s3://openstreetmap-fastly-processed-logs/tilelogs/",
               help="AWS s3 location for Athena results")
-@click.option('--generate-success', is_flag=True, default=False, help="Create logs of successful requests in Parquet")
+@click.option('--generate-success', is_flag=True, default=False,
+              help="Create logs of successful requests in Parquet")
 @click.option('--region', default="eu-west-1", help="Region for Athena")
 @click.option('--tile', type=click.File('wb'),
               help="File to output tile usage logs to")
@@ -72,12 +73,15 @@ ORDER BY z, x, y
         for tile in curs:
             file.write("{}/{}/{} {}\n".format(tile[0], tile[1], tile[2], tile[3]).encode('ascii'))
 
+
 psl = PublicSuffixList()
+
+
 def normalize_host(host):
     if host is None:
         return ""
     # IPs don't have a public/private suffix
-    if re.match("^(\d+\.){3}\d+$", host):
+    if re.match(r"^(\d+\.){3}\d+$", host):
         return host
 
     suffix = psl.privatesuffix(host)
@@ -87,6 +91,7 @@ def normalize_host(host):
     if suffix is None:
         return host
     return suffix
+
 
 def host_logs(curs, date, dest):
     click.echo("Querying for host usage")
@@ -123,16 +128,19 @@ ORDER BY COUNT(*) DESC;
             grouped_hosts[stripped_hostname] = [grouped_hosts[stripped_hostname][0] + host[1],
                                                 grouped_hosts[stripped_hostname][1] + host[2]]
 
-    sorted_hosts = sorted([[host, metrics[0], metrics[1]] for (host,metrics) in grouped_hosts.items() if metrics[0] >= tilelog.constants.MIN_TPS],
-           key=lambda host: host[1], reverse=True) # Sort by TPS
+    sorted_hosts = sorted([[host, metrics[0], metrics[1]]
+                           for (host, metrics) in grouped_hosts.items()
+                           if metrics[0] >= tilelog.constants.MIN_TPS],
+                          key=lambda host: host[1], reverse=True)  # Sort by TPS
     click.echo("Writing host usage to file")
     csvwriter = csv.writer(dest, dialect=csv.unix_dialect,
                            quoting=csv.QUOTE_NONNUMERIC)
     csvwriter.writerows(sorted_hosts)
 
+
 def app_logs(curs, date, dest):
     click.echo("Querying for app usage")
-    query = """
+    query = r"""
 SELECT
 app,
 cast(count(*) as double)/86400 AS tps,
@@ -176,7 +184,7 @@ WHERE year = %(year)d
 GROUP BY app
 HAVING COUNT(*) > %(tps)d*86400
 ORDER BY COUNT(*) DESC
-    """.format(tablename=tilelog.constants.FASTLY_PARQET_LOGS)
+    """.format(tablename=tilelog.constants.FASTLY_PARQET_LOGS)  # noqa: E501
 
     curs.execute(query, {"year": date.year, "month": date.month,
                          "day": date.day, "tps": tilelog.constants.MIN_TPS})

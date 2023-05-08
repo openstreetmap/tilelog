@@ -18,9 +18,10 @@ HAVING COUNT(DISTINCT ip) > %(min_distinct)d AND COUNT(*) > %(min_requests)d
 ORDER BY COUNT(*) DESC
     """.format(tablename=tilelog.constants.FASTLY_PARQET_LOGS)
 
-    curs.execute(query, {"year": date.year, "month": date.month,
-                         "day": date.day, "min_distinct": tilelog.constants.MIN_DISTINCT_TILE_REQUESTS,
-                         "min_requests": tilelog.constants.MIN_TILE_REQUESTS})
+    curs.execute(query,
+                 {"year": date.year, "month": date.month, "day": date.day,
+                  "min_distinct": tilelog.constants.MIN_DISTINCT_TILE_REQUESTS,
+                  "min_requests": tilelog.constants.MIN_TILE_REQUESTS})
     csvwriter = csv.writer(dest, dialect=csv.unix_dialect,
                            quoting=csv.QUOTE_NONNUMERIC)
     csvwriter.writerows(curs)
