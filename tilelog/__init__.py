@@ -9,6 +9,7 @@ import re
 
 import tilelog.constants
 import tilelog.aggregate
+import tilelog.country
 
 
 @click.command()
@@ -27,7 +28,9 @@ import tilelog.aggregate
               help="File to output host usage logs to")
 @click.option('--app', type=click.File('w', encoding='utf-8'),
               help="File to output app usage logs to")
-def cli(date, staging, generate_success, region, tile, host, app):
+@click.option('--country', type=click.File('w', encoding='utf-8'),
+              help="File with country-level statistics")
+def cli(date, staging, generate_success, region, tile, host, app, country):
     click.echo("Generating files for {}".format(date.strftime("%Y-%m-%d")))
     with pyathena.connect(s3_staging_dir=staging, region_name=region,
                           cursor_class=ArrowCursor).cursor() as curs:
@@ -42,6 +45,8 @@ def cli(date, staging, generate_success, region, tile, host, app):
             host_logs(curs, date, host)
         if app is not None:
             app_logs(curs, date, app)
+        if country is not None:
+            tilelog.country.country_logs(curs, date, country)
 
 
 def tile_logs(curs, date, dest):
