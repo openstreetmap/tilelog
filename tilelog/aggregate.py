@@ -2,7 +2,8 @@ import tilelog.constants
 
 TILE_REGEX = r"""'^GET /(\d{1,2})/(\d{1,6})/(\d{1,6})\.png'"""
 
-SELECT_COLUMNS = """
+regex = TILE_REGEX
+SELECT_COLUMNS = f"""
     time,
     ip,
     CAST(regexp_extract(request, {regex}, 1) AS integer) AS z,
@@ -29,20 +30,20 @@ SELECT_COLUMNS = """
     year,
     month,
     day,
-    hour""".format(regex=TILE_REGEX)
-
+    hour"""
 
 def create_parquet(curs, date):
 
     # Start by checking if any rows are in the table to avoid running twice.
     # This won't catch multiple parallel runs, but will catch running it twice in a row.
-    check_query = """
+    tablename = tilelog.constants.FASTLY_PARQET_LOGS
+    check_query = f"""
 SELECT * FROM {tablename}
 WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
 LIMIT 1;
-    """.format(tablename=tilelog.constants.FASTLY_PARQET_LOGS)
+    """
     curs.execute(check_query,
                  {"year": date.year, "month": date.month, "day": date.day})
     # curs.rowcount doesn't work for Athena, so iterate through the row. This does nothing
@@ -50,7 +51,11 @@ LIMIT 1;
     for line in curs:
         raise RuntimeError("aggregation queries have already been run for this day")
 
-    insert_query = """
+    columns=SELECT_COLUMNS
+    sourcetable=tilelog.constants.FASTLY_LOG_TABLE
+    tablename=tilelog.constants.FASTLY_PARQET_LOGS
+    regex=TILE_REGEX
+    insert_query = f"""
 INSERT INTO {tablename}
 SELECT {columns}
 FROM {sourcetable}
@@ -59,7 +64,6 @@ WHERE status IN (200, 206, 304)
     AND year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
-    """.format(columns=SELECT_COLUMNS, sourcetable=tilelog.constants.FASTLY_LOG_TABLE,
-               tablename=tilelog.constants.FASTLY_PARQET_LOGS, regex=TILE_REGEX)
+    """
     curs.execute(insert_query,
                  {"year": date.year, "month": date.month, "day": date.day})

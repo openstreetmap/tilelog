@@ -3,7 +3,8 @@ import tilelog.constants
 
 
 def country_logs(curs, date, dest):
-    query = """
+    tablename = tilelog.constants.FASTLY_PARQET_LOGS
+    query = f"""
 SELECT
 country,
 COUNT(DISTINCT ip) AS ips,
@@ -16,7 +17,7 @@ WHERE year = %(year)d
 GROUP BY country
 HAVING COUNT(DISTINCT ip) > %(min_distinct)d AND COUNT(*) > %(min_requests)d
 ORDER BY COUNT(*) DESC
-    """.format(tablename=tilelog.constants.FASTLY_PARQET_LOGS)
+    """
 
     curs.execute(query,
                  {"year": date.year, "month": date.month, "day": date.day,
