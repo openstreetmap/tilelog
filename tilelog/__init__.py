@@ -145,7 +145,8 @@ ORDER BY COUNT(*) DESC;
 
 def app_logs(curs, date, dest):
     click.echo("Querying for app usage")
-    query = r"""
+    tablename=tilelog.constants.FASTLY_PARQET_LOGS
+    query = fr"""
 SELECT
 app,
 cast(count(*) as double)/86400 AS tps,
@@ -166,7 +167,7 @@ FROM (
     WHEN useragent LIKE 'flutter_map (%%)' THEN 'flutter_map (*)'
 
     -- Extract app name from foo.bar/123.456
-    WHEN regexp_like(useragent, '^([^./]+(\.[^./]+)*)/\d+(\.\d+)*$') THEN regexp_extract(useragent, '^([^./]+(\.[^./]+)*)/\d+(\.\d+)*$', 1) || '/*'
+    'WHEN regexp_like(useragent, '^([^./]+(\.[^./]+)*)/\d+(\.\d+)*$') THEN regexp_extract(useragent, '^([^./]+(\.[^./]+)*)/\d+(\.\d+)*$', 1) || '/*'
     -- Some apps have extra stuff after the name/version
     WHEN regexp_like(useragent, '^([^/ ]+)(/[^/ ]+) CFNetwork/[^/ ]+ Darwin/[^/ ]+$') THEN regexp_extract(useragent, '^([^/ ]+)(/[^/ ]+) CFNetwork/[^/ ]+ Darwin/[^/ ]+$', 1) || '/* CFNetwork/* Darwin/*'
     -- Mapbox apps follow the pattern Bikemap/22.0.2 Mapbox/5.13.0-pre.1 MapboxGL/0.0.0 (c6fb3581) iOS/15.5.0 (arm64)
@@ -189,7 +190,7 @@ WHERE year = %(year)d
 GROUP BY app
 HAVING COUNT(*) > %(tps)d*86400
 ORDER BY COUNT(*) DESC
-    """.format(tablename=tilelog.constants.FASTLY_PARQET_LOGS)  # noqa: E501
+    """  # noqa: E501
 
     curs.execute(query, {"year": date.year, "month": date.month,
                          "day": date.day, "tps": tilelog.constants.MIN_TPS})
