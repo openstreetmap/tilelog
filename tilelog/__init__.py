@@ -32,8 +32,7 @@ import tilelog.country
 @click.option('--country', type=click.File('w', encoding='utf-8'),
               help="File with country-level statistics")
 def cli(date, staging, generate_success, region, tile, host, app, country):
-    date_str = date.strftime("%Y-%m-%d")
-    click.echo(f"Generating files for {date_str}")
+    click.echo(f"Generating files for {date.strftime('%Y-%m-%d')}")
     with pyathena.connect(s3_staging_dir=staging, region_name=region,
                           cursor_class=ArrowCursor).cursor() as curs:
 
@@ -53,11 +52,10 @@ def cli(date, staging, generate_success, region, tile, host, app, country):
 
 def tile_logs(curs, date, dest):
     click.echo("Querying for tile usage")
-    tablename=tilelog.constants.FASTLY_PARQET_LOGS
     query = f"""
 SELECT z, x, y,
         COUNT(*)
-FROM {tablename}
+FROM {tilelog.constants.FASTLY_PARQET_LOGS}
 WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
@@ -66,15 +64,14 @@ HAVING COUNT(DISTINCT ip) >= %(min_distinct)d
     AND COUNT(*) >= %(min_requests)d
 ORDER BY z, x, y
     """
-    curs.execute(query, {"year": date.year, 
-                         "month": date.month,
+    curs.execute(query, {"year": date.year, "month": date.month,
                          "day": date.day,
                          "min_distinct": tilelog.constants.MIN_DISTINCT_TILE_REQUESTS,
                          "min_requests": tilelog.constants.MIN_TILE_REQUESTS})
     click.echo("Writing tile usage to file")
     with lzma.open(dest, "w") as file:
         for tile in curs:
-            tile_0,tile_1,tile_2,tile_3 = tile[0],tile[1],tile[2],tile[3] 
+            tile_0, tile_1, tile_2, tile_3 = tile[0], tile[1], tile[2], tile[3]
             file.write(f"{tile_0}/{tile_1}/{tile_2} {tile_3}\n").encode('ascii')
 
 
@@ -99,7 +96,6 @@ def normalize_host(host):
 
 def host_logs(curs, date, dest):
     click.echo("Querying for host usage")
-    tablename = tilelog.constants.FASTLY_PARQET_LOGS
     query = f"""
 SELECT
 host,
@@ -109,7 +105,7 @@ FROM (
     SELECT regexp_extract(referer,
                           'https?://([^/]+?)(:[0-9]+)?/.*', 1) AS host,
     cachehit
-FROM {tablename}
+FROM {tilelog.constants.FASTLY_PARQET_LOGS}
 WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
@@ -145,7 +141,6 @@ ORDER BY COUNT(*) DESC;
 
 def app_logs(curs, date, dest):
     click.echo("Querying for app usage")
-    tablename=tilelog.constants.FASTLY_PARQET_LOGS
     query = fr"""
 SELECT
 app,
@@ -167,7 +162,7 @@ FROM (
     WHEN useragent LIKE 'flutter_map (%%)' THEN 'flutter_map (*)'
 
     -- Extract app name from foo.bar/123.456
-    'WHEN regexp_like(useragent, '^([^./]+(\.[^./]+)*)/\d+(\.\d+)*$') THEN regexp_extract(useragent, '^([^./]+(\.[^./]+)*)/\d+(\.\d+)*$', 1) || '/*'
+    WHEN regexp_like(useragent, '^([^./]+(\.[^./]+)*)/\d+(\.\d+)*$') THEN regexp_extract(useragent, '^([^./]+(\.[^./]+)*)/\d+(\.\d+)*$', 1) || '/*'
     -- Some apps have extra stuff after the name/version
     WHEN regexp_like(useragent, '^([^/ ]+)(/[^/ ]+) CFNetwork/[^/ ]+ Darwin/[^/ ]+$') THEN regexp_extract(useragent, '^([^/ ]+)(/[^/ ]+) CFNetwork/[^/ ]+ Darwin/[^/ ]+$', 1) || '/* CFNetwork/* Darwin/*'
     -- Mapbox apps follow the pattern Bikemap/22.0.2 Mapbox/5.13.0-pre.1 MapboxGL/0.0.0 (c6fb3581) iOS/15.5.0 (arm64)
@@ -177,7 +172,7 @@ FROM (
     WHEN useragent LIKE 'Mozilla/%%' AND referer != '' THEN referer -- This will only show referers that are not https ones, e.g. flash apps
     ELSE useragent END AS app,
     cachehit
-    FROM {tablename}
+    FROM {tilelog.constants.FASTLY_PARQET_LOGS}
 WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d

@@ -3,14 +3,13 @@ import tilelog.constants
 
 
 def country_logs(curs, date, dest):
-    tablename = tilelog.constants.FASTLY_PARQET_LOGS
     query = f"""
 SELECT
 country,
 COUNT(DISTINCT ip) AS ips,
 cast(count(*) as double)/86400 AS tps,
 cast(count(*) filter (WHERE cachehit = 'MISS') as double)/86400 AS tps_miss
-    FROM {tablename}
+    FROM {tilelog.constants.FASTLY_PARQET_LOGS}
 WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d

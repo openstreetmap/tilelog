@@ -32,13 +32,13 @@ SELECT_COLUMNS = f"""
     day,
     hour"""
 
+
 def create_parquet(curs, date):
 
     # Start by checking if any rows are in the table to avoid running twice.
     # This won't catch multiple parallel runs, but will catch running it twice in a row.
-    tablename = tilelog.constants.FASTLY_PARQET_LOGS
     check_query = f"""
-SELECT * FROM {tablename}
+SELECT * FROM {tilelog.constants.FASTLY_PARQET_LOGS}
 WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
@@ -51,16 +51,12 @@ LIMIT 1;
     for line in curs:
         raise RuntimeError("aggregation queries have already been run for this day")
 
-    columns=SELECT_COLUMNS
-    sourcetable=tilelog.constants.FASTLY_LOG_TABLE
-    tablename=tilelog.constants.FASTLY_PARQET_LOGS
-    regex=TILE_REGEX
     insert_query = f"""
-INSERT INTO {tablename}
-SELECT {columns}
-FROM {sourcetable}
+INSERT INTO {tilelog.constants.FASTLY_PARQET_LOGS}
+SELECT {SELECT_COLUMNS}
+FROM {tilelog.constants.FASTLY_LOG_TABLE}
 WHERE status IN (200, 206, 304)
-    AND regexp_like(request, {regex})
+    AND regexp_like(request, {TILE_REGEX})
     AND year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
