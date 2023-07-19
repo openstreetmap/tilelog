@@ -71,8 +71,7 @@ ORDER BY z, x, y
     click.echo("Writing tile usage to file")
     with lzma.open(dest, "w") as file:
         for tile in curs:
-            tile_0, tile_1, tile_2, tile_3 = tile[0], tile[1], tile[2], tile[3]
-            file.write(f"{tile_0}/{tile_1}/{tile_2} {tile_3}\n").encode('ascii')
+            file.write(f"{tile[0]}/{tile[1]}/{tile[2]} {tile[3]}\n".encode('ascii'))
 
 
 psl = PublicSuffixList()
