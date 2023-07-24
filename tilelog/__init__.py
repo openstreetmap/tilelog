@@ -32,7 +32,7 @@ import tilelog.country
 @click.option('--country', type=click.File('w', encoding='utf-8'),
               help="File with country-level statistics")
 def cli(date, staging, generate_success, region, tile, host, app, country):
-    click.echo("Generating files for {}".format(date.strftime("%Y-%m-%d")))
+    click.echo(f"Generating files for {date.strftime('%Y-%m-%d')}")
     with pyathena.connect(s3_staging_dir=staging, region_name=region,
                           cursor_class=ArrowCursor).cursor() as curs:
 
@@ -52,10 +52,10 @@ def cli(date, staging, generate_success, region, tile, host, app, country):
 
 def tile_logs(curs, date, dest):
     click.echo("Querying for tile usage")
-    query = """
+    query = f"""
 SELECT z, x, y,
         COUNT(*)
-FROM {tablename}
+FROM {tilelog.constants.FASTLY_PARQET_LOGS}
 WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
@@ -63,7 +63,7 @@ GROUP BY z, x, y
 HAVING COUNT(DISTINCT ip) >= %(min_distinct)d
     AND COUNT(*) >= %(min_requests)d
 ORDER BY z, x, y
-    """.format(tablename=tilelog.constants.FASTLY_PARQET_LOGS)
+    """
     curs.execute(query, {"year": date.year, "month": date.month,
                          "day": date.day,
                          "min_distinct": tilelog.constants.MIN_DISTINCT_TILE_REQUESTS,
@@ -71,7 +71,7 @@ ORDER BY z, x, y
     click.echo("Writing tile usage to file")
     with lzma.open(dest, "w") as file:
         for tile in curs:
-            file.write("{}/{}/{} {}\n".format(tile[0], tile[1], tile[2], tile[3]).encode('ascii'))
+            file.write(f"{tile[0]}/{tile[1]}/{tile[2]} {tile[3]}\n".encode('ascii'))
 
 
 psl = PublicSuffixList()
@@ -95,7 +95,7 @@ def normalize_host(host):
 
 def host_logs(curs, date, dest):
     click.echo("Querying for host usage")
-    query = """
+    query = f"""
 SELECT
 host,
 cast(count(*) as double)/86400 AS tps,
@@ -104,7 +104,7 @@ FROM (
     SELECT regexp_extract(referer,
                           'https?://([^/]+?)(:[0-9]+)?/.*', 1) AS host,
     cachehit
-FROM {tablename}
+FROM {tilelog.constants.FASTLY_PARQET_LOGS}
 WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
@@ -113,7 +113,7 @@ WHERE year = %(year)d
     ) AS stripped_referers
 GROUP BY host
 ORDER BY COUNT(*) DESC;
-    """.format(tablename=tilelog.constants.FASTLY_PARQET_LOGS)
+    """
     curs.execute(query, {"year": date.year, "month": date.month,
                          "day": date.day})
 
@@ -140,7 +140,7 @@ ORDER BY COUNT(*) DESC;
 
 def app_logs(curs, date, dest):
     click.echo("Querying for app usage")
-    query = r"""
+    query = fr"""
 SELECT
 app,
 cast(count(*) as double)/86400 AS tps,
@@ -171,7 +171,7 @@ FROM (
     WHEN useragent LIKE 'Mozilla/%%' AND referer != '' THEN referer -- This will only show referers that are not https ones, e.g. flash apps
     ELSE useragent END AS app,
     cachehit
-    FROM {tablename}
+    FROM {tilelog.constants.FASTLY_PARQET_LOGS}
 WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
@@ -184,7 +184,7 @@ WHERE year = %(year)d
 GROUP BY app
 HAVING COUNT(*) > %(tps)d*86400
 ORDER BY COUNT(*) DESC
-    """.format(tablename=tilelog.constants.FASTLY_PARQET_LOGS)  # noqa: E501
+    """  # noqa: E501
 
     curs.execute(query, {"year": date.year, "month": date.month,
                          "day": date.day, "tps": tilelog.constants.MIN_TPS})
