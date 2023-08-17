@@ -10,6 +10,7 @@ import re
 import tilelog.constants
 import tilelog.aggregate
 import tilelog.minimise
+import tilelog.location
 import tilelog.country
 
 
@@ -25,6 +26,8 @@ import tilelog.country
               help="Create logs of successful requests in Parquet")
 @click.option('--generate-minimise', is_flag=True, default=False,
               help="Create minimised request logs in Parquet")
+@click.option('--generate-location', is_flag=True, default=False,
+              help="Create location request logs in Parquet")
 @click.option('--region', default="eu-west-1", help="Region for Athena")
 @click.option('--tile', type=click.File('wb'),
               help="File to output tile usage logs to")
@@ -34,7 +37,8 @@ import tilelog.country
               help="File to output app usage logs to")
 @click.option('--country', type=click.File('w', encoding='utf-8'),
               help="File with country-level statistics")
-def cli(date, staging, generate_success, generate_minimise, region, tile, host, app, country):
+def cli(date, staging, generate_success, generate_minimise, generate_location,
+        region, tile, host, app, country):
     click.echo(f"Generating files for {date.strftime('%Y-%m-%d')}")
     with pyathena.connect(s3_staging_dir=staging, region_name=region,
                           cursor_class=ArrowCursor).cursor() as curs:
@@ -44,6 +48,8 @@ def cli(date, staging, generate_success, generate_minimise, region, tile, host, 
             tilelog.aggregate.create_parquet(curs, date)
         if generate_minimise:
             tilelog.minimise.create_minimised(curs, date)
+        if generate_location:
+            tilelog.location.create_location(curs, date)
         if tile is not None:
             tile_logs(curs, date, tile)
         if host is not None:
