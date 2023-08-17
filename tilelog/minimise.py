@@ -43,7 +43,7 @@ LIMIT 1;
     insert_query = f"""
 INSERT INTO {tilelog.constants.FASTLY_MINIMISED_LOGS}
 SELECT
-COUNT(*) AS requests,
+    COUNT(*) AS requests,
     COUNT(DISTINCT ip) AS distinct_ip,
     SUM(size) AS size,
     SUM(duration) AS duration,
