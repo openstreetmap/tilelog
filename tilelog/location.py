@@ -42,7 +42,9 @@ FROM {tilelog.constants.FASTLY_PARQET_LOGS}
 WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
+    AND hour = %(hour)d
 GROUP BY {GROUP_COLUMNS}
     """
-    curs.execute(insert_query,
-                 {"year": date.year, "month": date.month, "day": date.day})
+    for hour in range(0, 24):
+        curs.execute(insert_query,
+                     {"year": date.year, "month": date.month, "day": date.day, "hour": hour})
