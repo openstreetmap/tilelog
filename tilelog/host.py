@@ -30,13 +30,15 @@ def host_logs(curs, date, dest):
     query = f"""
 SELECT
 host,
-cast(count(*) as double)/86400 AS tps,
-cast(count(*) FILTER (WHERE cachehit = 'MISS') as double)/86400 AS tps_miss
+cast(COALESCE(SUM(requests), 0) as double)/86400 AS tps,
+cast(COALESCE(SUM(requests) FILTER (WHERE cachehit = 'MISS'), 0) as double)/86400 AS tps_miss
 FROM (
+
     SELECT regexp_extract(referer,
                           'https?://([^/]+?)(:[0-9]+)?/.*', 1) AS host,
-    cachehit
-FROM {tilelog.constants.FASTLY_PARQET_LOGS}
+        requests,
+        cachehit
+FROM {tilelog.constants.FASTLY_MINIMISED_LOGS}
 WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
