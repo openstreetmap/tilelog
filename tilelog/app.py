@@ -9,8 +9,8 @@ def app_logs(curs, date, dest):
     query = fr"""
 SELECT
 app,
-cast(count(*) as double)/86400 AS tps,
-cast(count(*) filter (WHERE cachehit = 'MISS') as double)/86400 AS tps_miss
+cast(COALESCE(SUM(requests), 0) as double)/86400 AS tps,
+cast(COALESCE(SUM(requests) FILTER (WHERE cachehit = 'MISS'), 0) as double)/86400 AS tps_miss
 FROM (
     SELECT
     CASE
@@ -36,8 +36,9 @@ FROM (
 
     WHEN useragent LIKE 'Mozilla/%%' AND referer != '' THEN referer -- This will only show referers that are not https ones, e.g. flash apps
     ELSE useragent END AS app,
+    requests,
     cachehit
-    FROM {tilelog.constants.FASTLY_PARQET_LOGS}
+    FROM {tilelog.constants.FASTLY_MINIMISED_LOGS}
 WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
@@ -48,8 +49,8 @@ WHERE year = %(year)d
     )
 ) AS combined_requests
 GROUP BY app
-HAVING COUNT(*) > %(tps)d*86400
-ORDER BY COUNT(*) DESC
+HAVING SUM(requests) > %(tps)d*86400
+ORDER BY SUM(requests) DESC
     """  # noqa: E501
 
     curs.execute(query, {"year": date.year, "month": date.month,
