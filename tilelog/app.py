@@ -25,6 +25,7 @@ FROM (
     WHEN useragent LIKE 'Wikiloc %%' THEN 'Wikiloc *'
     WHEN useragent LIKE 'Mapbox iOS SDK (%%)' THEN 'Mapbox iOS SDK (*)'
     WHEN useragent LIKE 'flutter_map (%%)' THEN 'flutter_map (*)'
+    WHEN useragent LIKE 'Graph Messenger T%% - P%%' THEN 'Graph Messenger T* - P*'
 
     -- Extract app name from foo.bar/123.456
     WHEN regexp_like(useragent, '^([^./]+(\.[^./]+)*)/\d+(\.\d+)*$') THEN regexp_extract(useragent, '^([^./]+(\.[^./]+)*)/\d+(\.\d+)*$', 1) || '/*'
