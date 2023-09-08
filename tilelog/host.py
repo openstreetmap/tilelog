@@ -67,6 +67,10 @@ ORDER BY COUNT(*) DESC;
                            if metrics[0] >= tilelog.constants.MIN_TPS],
                           key=lambda host: host[1], reverse=True)  # Sort by TPS
     click.echo("Writing host usage to file")
+    
     csvwriter = csv.writer(dest, dialect=csv.unix_dialect,
                            quoting=csv.QUOTE_NONNUMERIC)
+    # Write the header row
+    csvwriter.writerow(["host", "tps", "tps_miss"])
+    # Write the rows
     csvwriter.writerows(sorted_hosts)
