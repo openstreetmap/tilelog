@@ -26,6 +26,5 @@ ORDER BY COUNT(*) DESC
                            quoting=csv.QUOTE_NONNUMERIC)
     # Write the header row
     csvwriter.writerow(["country", "ips", "tps", "tps_miss"])
-
     # Write the rows
     csvwriter.writerows(curs)
