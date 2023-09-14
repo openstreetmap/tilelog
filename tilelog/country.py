@@ -24,4 +24,7 @@ ORDER BY COUNT(*) DESC
                   "min_requests": tilelog.constants.MIN_TILE_REQUESTS})
     csvwriter = csv.writer(dest, dialect=csv.unix_dialect,
                            quoting=csv.QUOTE_NONNUMERIC)
+    # Write the header row
+    csvwriter.writerow(["country", "ips", "tps", "tps_miss"])
+    # Write the rows
     csvwriter.writerows(curs)

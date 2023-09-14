@@ -69,4 +69,7 @@ ORDER BY COUNT(*) DESC;
     click.echo("Writing host usage to file")
     csvwriter = csv.writer(dest, dialect=csv.unix_dialect,
                            quoting=csv.QUOTE_NONNUMERIC)
+    # Write the header row
+    csvwriter.writerow(["host", "tps", "tps_miss"])
+    # Write the rows
     csvwriter.writerows(sorted_hosts)
