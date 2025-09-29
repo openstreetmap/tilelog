@@ -9,12 +9,11 @@ Tilelog is used to generate [tile logs](https://planet.openstreetmap.org/tile_lo
 
 ## Install
 
-For local development
+For local development install [uv](https://github.com/astral-sh/uv) and
 
 ```sh
-python3 -m venv venv
-. venv/bin/activate
-pip install --editable .
+uv venv
+uv run tilelog --help
 ```
 
 ## Usage
