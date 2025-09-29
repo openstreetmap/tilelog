@@ -1,0 +1,46 @@
+[project]
+name = "tilelog"
+dynamic = ["version"]
+description = "Process OpenStreetMap tile logs"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+requires-python = ">=3.10, <4"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3"
+]
+dependencies = [
+    "Click",
+    "publicsuffixlist",
+    "pyathena",
+    "PyAthena[Arrow]"
+]
+
+[project.scripts]
+tilelog = "tilelog:cli"
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+# Allows pypi uploads. ref: https://github.com/ofek/hatch-vcs/discussions/12
+[tool.hatch.version.raw-options]
+local_scheme = "no-local-version"
+
+[tool.ruff]
+line-length = 100
+
+[[tool.mypy.overrides]]
+module = ["publicsuffixlist.*"]
+follow_untyped_imports = true
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18.2",
+]
