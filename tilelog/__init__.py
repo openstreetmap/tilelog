@@ -1,6 +1,6 @@
 import click
 import pyathena
-from pyathena.arrow.cursor import ArrowCursor
+from pyathena.pandas.cursor import PandasCursor
 import datetime
 import lzma
 
@@ -19,44 +19,44 @@ import tilelog.host
                        datetime.timedelta(days=1)).strftime("%Y-%m-%d"),
               help="Date to generate logs for. Defaults to yesterday.")
 @click.option('--staging',
-              default="s3://openstreetmap-fastly-processed-logs/tilelogs/",
+              default="s3://openstreetmap-athena-results/",
               help="AWS s3 location for Athena results")
-@click.option('--generate-success', is_flag=True, default=False,
+@click.option('--raster-generate-success', is_flag=True, default=False,
               help="Create logs of successful requests in Parquet")
-@click.option('--generate-minimise', is_flag=True, default=False,
+@click.option('--raster-generate-minimise', is_flag=True, default=False,
               help="Create minimised request logs in Parquet")
-@click.option('--generate-location', is_flag=True, default=False,
+@click.option('--raster-generate-location', is_flag=True, default=False,
               help="Create location request logs in Parquet")
-@click.option('--region', default="eu-west-1", help="Region for Athena")
-@click.option('--tile', type=click.File('wb'),
+@click.option('--region', default="eu-north-1", help="Region for Athena")
+@click.option('--raster-tile', type=click.File('wb'),
               help="File to output tile usage logs to")
-@click.option('--host', type=click.File('w', encoding='utf-8'),
+@click.option('--raster-host', type=click.File('w', encoding='utf-8'),
               help="File to output host usage logs to")
-@click.option('--app', type=click.File('w', encoding='utf-8'),
+@click.option('--raster-app', type=click.File('w', encoding='utf-8'),
               help="File to output app usage logs to")
-@click.option('--country', type=click.File('w', encoding='utf-8'),
+@click.option('--raster-country', type=click.File('w', encoding='utf-8'),
               help="File with country-level statistics")
-def cli(date, staging, generate_success, generate_minimise, generate_location,
-        region, tile, host, app, country):
+def cli(date, staging, raster_generate_success, raster_generate_minimise, raster_generate_location,
+        region, raster_tile, raster_host, raster_app, raster_country):
     click.echo(f"Generating files for {date.strftime('%Y-%m-%d')}")
     with pyathena.connect(s3_staging_dir=staging, region_name=region,
-                          cursor_class=ArrowCursor).cursor() as curs:
+                          cursor_class=PandasCursor).cursor() as curs:
 
         # Aggregation must be run first, because the other tasks depend on it
-        if generate_success:
+        if raster_generate_success:
             tilelog.aggregate.create_parquet(curs, date)
-        if generate_minimise:
+        if raster_generate_minimise:
             tilelog.minimise.create_minimised(curs, date)
-        if generate_location:
+        if raster_generate_location:
             tilelog.location.create_location(curs, date)
-        if tile is not None:
-            tile_logs(curs, date, tile)
-        if host is not None:
-            tilelog.host.host_logs(curs, date, host)
-        if app is not None:
-            tilelog.app.app_logs(curs, date, app)
-        if country is not None:
-            tilelog.country.country_logs(curs, date, country)
+        if raster_tile is not None:
+            tile_logs(curs, date, raster_tile)
+        if raster_host is not None:
+            tilelog.host.host_logs(curs, date, raster_host)
+        if raster_app is not None:
+            tilelog.app.app_logs(curs, date, raster_app)
+        if raster_country is not None:
+            tilelog.country.country_logs(curs, date, raster_country)
 
 
 def tile_logs(curs, date, dest):

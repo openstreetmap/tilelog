@@ -16,7 +16,7 @@ dependencies = [
     "Click",
     "publicsuffixlist",
     "pyathena",
-    "PyAthena[Arrow]"
+    "PyAthena[Pandas]"
 ]
 
 [project.scripts]

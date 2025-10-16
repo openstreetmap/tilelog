@@ -6,6 +6,8 @@ GROUP_COLUMNS = """
     referer,
     useragent,
     secchua,
+    fetchsite,
+    origin,
     requestedwith,
     accept,
     acceptlang,

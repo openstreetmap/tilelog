@@ -14,6 +14,8 @@ SELECT_COLUMNS = f"""
     referer,
     useragent,
     secchua,
+    fetchsite,
+    origin,
     requestedwith,
     accept,
     acceptlang,

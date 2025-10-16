@@ -12,6 +12,11 @@ psl = PublicSuffixList()
 def normalize_host(host):
     if host is None:
         return ""
+
+    # Panda turns a missing host into nan, so handle this and other invalid data
+    if not isinstance(host, str):
+        return None
+
     # IPs don't have a public/private suffix
     if re.match(r"^(\d+\.){3}\d+$", host):
         return host

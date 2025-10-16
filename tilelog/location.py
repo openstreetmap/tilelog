@@ -5,8 +5,6 @@ GROUP_COLUMNS = """
     x,
     y,
     country,
-    datacenter,
-    region,
     year,
     month,
     day,
