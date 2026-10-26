@@ -1,4 +1,5 @@
 import csv
+
 import tilelog.constants
 
 
@@ -18,12 +19,17 @@ HAVING COUNT(DISTINCT ip) > %(min_distinct)d AND COUNT(*) > %(min_requests)d
 ORDER BY COUNT(*) DESC
     """
 
-    curs.execute(query,
-                 {"year": date.year, "month": date.month, "day": date.day,
-                  "min_distinct": tilelog.constants.MIN_DISTINCT_TILE_REQUESTS,
-                  "min_requests": tilelog.constants.MIN_TILE_REQUESTS})
-    csvwriter = csv.writer(dest, dialect=csv.unix_dialect,
-                           quoting=csv.QUOTE_NONNUMERIC)
+    curs.execute(
+        query,
+        {
+            "year": date.year,
+            "month": date.month,
+            "day": date.day,
+            "min_distinct": tilelog.constants.MIN_DISTINCT_TILE_REQUESTS,
+            "min_requests": tilelog.constants.MIN_TILE_REQUESTS,
+        },
+    )
+    csvwriter = csv.writer(dest, dialect=csv.unix_dialect, quoting=csv.QUOTE_NONNUMERIC)
     # Write the header row
     csvwriter.writerow(["country", "ips", "tps", "tps_miss"])
     # Write the rows

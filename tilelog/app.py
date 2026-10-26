@@ -1,12 +1,13 @@
-import click
 import csv
+
+import click
 
 import tilelog.constants
 
 
 def app_logs(curs, date, dest):
     click.echo("Querying for app usage")
-    query = fr"""
+    query = rf"""
 SELECT
 app,
 cast(COALESCE(SUM(requests), 0) as double)/86400 AS tps,
@@ -52,13 +53,14 @@ WHERE year = %(year)d
 GROUP BY app
 HAVING SUM(requests) > %(tps)d*86400
 ORDER BY SUM(requests) DESC
-    """  # noqa: E501
+    """
 
-    curs.execute(query, {"year": date.year, "month": date.month,
-                         "day": date.day, "tps": tilelog.constants.MIN_TPS})
+    curs.execute(
+        query,
+        {"year": date.year, "month": date.month, "day": date.day, "tps": tilelog.constants.MIN_TPS},
+    )
     click.echo("Writing host usage to file")
-    csvwriter = csv.writer(dest, dialect=csv.unix_dialect,
-                           quoting=csv.QUOTE_NONNUMERIC)
+    csvwriter = csv.writer(dest, dialect=csv.unix_dialect, quoting=csv.QUOTE_NONNUMERIC)
     # Write the header row
     csvwriter.writerow(["app", "tps", "tps_miss"])
     # Write the rows

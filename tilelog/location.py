@@ -21,8 +21,7 @@ WHERE year = %(year)d
     AND day = %(day)d
 LIMIT 1;
     """
-    curs.execute(check_query,
-                 {"year": date.year, "month": date.month, "day": date.day})
+    curs.execute(check_query, {"year": date.year, "month": date.month, "day": date.day})
     # curs.rowcount doesn't work for Athena, so iterate through the row. This does nothing
     # if there are no rows in the table for this day, otherwise, it throws an exception.
     for line in curs:
@@ -43,6 +42,7 @@ WHERE year = %(year)d
     AND hour = %(hour)d
 GROUP BY {GROUP_COLUMNS}
     """
-    for hour in range(0, 24):
-        curs.execute(insert_query,
-                     {"year": date.year, "month": date.month, "day": date.day, "hour": hour})
+    for hour in range(24):
+        curs.execute(
+            insert_query, {"year": date.year, "month": date.month, "day": date.day, "hour": hour}
+        )

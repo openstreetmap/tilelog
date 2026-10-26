@@ -1,10 +1,10 @@
-import click
-from publicsuffixlist import PublicSuffixList
 import csv
 import re
 
-import tilelog.constants
+import click
+from publicsuffixlist import PublicSuffixList
 
+import tilelog.constants
 
 psl = PublicSuffixList()
 
@@ -53,8 +53,7 @@ WHERE year = %(year)d
 GROUP BY host
 ORDER BY COUNT(*) DESC;
     """
-    curs.execute(query, {"year": date.year, "month": date.month,
-                         "day": date.day})
+    curs.execute(query, {"year": date.year, "month": date.month, "day": date.day})
 
     # Create a dict of lists of TPS
     grouped_hosts = {}
@@ -64,16 +63,22 @@ ORDER BY COUNT(*) DESC;
             grouped_hosts[stripped_hostname] = [host[1], host[2]]
         else:
             # TPS is host[1] and grouped_hosts[][0], so the indexes don't match up
-            grouped_hosts[stripped_hostname] = [grouped_hosts[stripped_hostname][0] + host[1],
-                                                grouped_hosts[stripped_hostname][1] + host[2]]
+            grouped_hosts[stripped_hostname] = [
+                grouped_hosts[stripped_hostname][0] + host[1],
+                grouped_hosts[stripped_hostname][1] + host[2],
+            ]
 
-    sorted_hosts = sorted([[host, metrics[0], metrics[1]]
-                           for (host, metrics) in grouped_hosts.items()
-                           if metrics[0] >= tilelog.constants.MIN_TPS],
-                          key=lambda host: host[1], reverse=True)  # Sort by TPS
+    sorted_hosts = sorted(
+        [
+            [host, metrics[0], metrics[1]]
+            for (host, metrics) in grouped_hosts.items()
+            if metrics[0] >= tilelog.constants.MIN_TPS
+        ],
+        key=lambda host: host[1],
+        reverse=True,
+    )  # Sort by TPS
     click.echo("Writing host usage to file")
-    csvwriter = csv.writer(dest, dialect=csv.unix_dialect,
-                           quoting=csv.QUOTE_NONNUMERIC)
+    csvwriter = csv.writer(dest, dialect=csv.unix_dialect, quoting=csv.QUOTE_NONNUMERIC)
     # Write the header row
     csvwriter.writerow(["host", "tps", "tps_miss"])
     # Write the rows
