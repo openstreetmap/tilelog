@@ -49,6 +49,15 @@ The format is one tile per line, in the format `z/x/y N` where `z/x/y` is the co
 
 No particular sorting order of lines is guaranteed.
 
+Tile usage queries run sequentially in 4 shards by default, partitioned by
+`MOD(x + y + z, N)`. Use `--raster-tile-shards N` to configure the shard count
+(minimum 1). Each shard's results are appended to the single compressed output
+specified by `--raster-tile`; no sorting is performed.
+
+```sh
+tilelog --date 2026-10-23 --raster-tile tiles-2026-10-23.txt.xz --raster-tile-shards 8
+```
+
 ### Host logs
 Host logs contain the website host of sites using tile.openstreetmap.org, their average requests/second, and their average requests/second that were cache misses in a given 24 hour UTC day. For privacy reasons, only sites with at least 432000 requests per day (5 requests/second average) coming from the site are included. Requests that were blocked, invalid, or unable to be served due to server load are not included (4xx and 5xx errors).
 

@@ -47,6 +47,13 @@ import tilelog.minimise
 @click.option("--region", default="eu-north-1", help="Region for Athena")
 @click.option("--raster-tile", type=click.File("wb"), help="File to output tile usage logs to")
 @click.option(
+    "--raster-tile-shards",
+    type=click.IntRange(min=1),
+    default=4,
+    show_default=True,
+    help="Number of shards for the tile usage query",
+)
+@click.option(
     "--raster-host",
     type=click.File("w", encoding="utf-8"),
     help="File to output host usage logs to",
@@ -67,6 +74,7 @@ def cli(
     raster_generate_location,
     region,
     raster_tile,
+    raster_tile_shards,
     raster_host,
     raster_app,
     raster_country,
@@ -83,7 +91,7 @@ def cli(
         if raster_generate_location:
             tilelog.location.create_location(curs, date)
         if raster_tile is not None:
-            tile_logs(curs, date, raster_tile)
+            tile_logs(curs, date, raster_tile, shards=raster_tile_shards)
         if raster_host is not None:
             tilelog.host.host_logs(curs, date, raster_host)
         if raster_app is not None:
@@ -92,8 +100,10 @@ def cli(
             tilelog.country.country_logs(curs, date, raster_country)
 
 
-def tile_logs(curs, date, dest):
-    click.echo("Querying for tile usage")
+def tile_logs(curs, date, dest, shards):
+    if shards < 1:
+        raise ValueError("shards must be at least 1")
+
     query = f"""
 SELECT z, x, y,
         COUNT(*)
@@ -101,22 +111,26 @@ FROM {tilelog.constants.FASTLY_PARQET_LOGS}
 WHERE year = %(year)d
     AND month = %(month)d
     AND day = %(day)d
+    AND MOD(x + y + z, %(shards)d) = %(shard)d
 GROUP BY z, x, y
 HAVING COUNT(DISTINCT ip) >= %(min_distinct)d
     AND COUNT(*) >= %(min_requests)d
-ORDER BY z, x, y
     """
-    curs.execute(
-        query,
-        {
-            "year": date.year,
-            "month": date.month,
-            "day": date.day,
-            "min_distinct": tilelog.constants.MIN_DISTINCT_TILE_REQUESTS,
-            "min_requests": tilelog.constants.MIN_TILE_REQUESTS,
-        },
-    )
-    click.echo("Writing tile usage to file")
     with lzma.open(dest, "w") as file:
-        for tile in curs:
-            file.write(f"{tile[0]}/{tile[1]}/{tile[2]} {tile[3]}\n".encode("ascii"))
+        for shard in range(shards):
+            click.echo(f"Querying for tile usage (shard {shard + 1}/{shards})")
+            curs.execute(
+                query,
+                {
+                    "year": date.year,
+                    "month": date.month,
+                    "day": date.day,
+                    "shards": shards,
+                    "shard": shard,
+                    "min_distinct": tilelog.constants.MIN_DISTINCT_TILE_REQUESTS,
+                    "min_requests": tilelog.constants.MIN_TILE_REQUESTS,
+                },
+            )
+            click.echo("Writing tile usage to file")
+            for tile in curs:
+                file.write(f"{tile[0]}/{tile[1]}/{tile[2]} {tile[3]}\n".encode("ascii"))
