@@ -59,7 +59,7 @@ ORDER BY SUM(requests) DESC
         query,
         {"year": date.year, "month": date.month, "day": date.day, "tps": tilelog.constants.MIN_TPS},
     )
-    click.echo("Writing host usage to file")
+    click.echo("Writing app usage to file")
     csvwriter = csv.writer(dest, dialect=csv.unix_dialect, quoting=csv.QUOTE_NONNUMERIC)
     # Write the header row
     csvwriter.writerow(["app", "tps", "tps_miss"])
